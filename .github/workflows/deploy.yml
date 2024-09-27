@@ -1,0 +1,27 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Deploy to EC2
+        run: |
+          ssh -i ./Galleria.pem ubuntu@35.154.81.104 "pm2 stop all; cd /home/ubuntu/node-cicd-aws; git pull origin main; npm install; pm2 start app.js"
+        env:
+          PEM_FILE: ${{ secrets.AWS_EC2_PEM }}
