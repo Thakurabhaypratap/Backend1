@@ -1,27 +1,31 @@
-name: Deploy to EC2
+name: Node.js CI/CD on Amazon Linux
 
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-
+      - uses: actions/checkout@v2
       - name: Install dependencies
         run: npm install
-
-      - name: Deploy to EC2
-        run: |
-          ssh -i ./Galleria.pem ubuntu@35.154.81.104 "pm2 stop all; cd /home/ubuntu/node-cicd-aws; git pull origin main; npm install; pm2 start app.js"
-        env:
-          PEM_FILE: ${{ secrets.AWS_EC2_PEM }}
+      - name: Deploy to AWS EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./"
+          target: "/var/www/your_project_directory"
+      - name: Restart PM2 application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/your_project_directory
+            pm2 reload all
